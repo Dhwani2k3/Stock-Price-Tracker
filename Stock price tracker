@@ -1,0 +1,164 @@
+import requests
+from bs4 import BeautifulSoup
+import tkinter as tk
+from tkinter import messagebox
+from bse import BSE  # Importing the BSE library
+from PIL import Image, ImageTk
+
+
+class StockTracker:
+    def __init__(self, master):
+        self.master = master
+        self.master.title("Stock Price Tracker")
+        self.master.geometry("800x600")  # Set window size
+
+        # Create a canvas widget
+        self.canvas = tk.Canvas(master, width=800, height=600)
+        self.canvas.pack(fill="both", expand=True)
+
+        # Load background image
+        original_image = Image.open(r'C:\Users\VARUN\Desktop\pooja\sub\sptpic.png')  # Update this path
+
+        # Create a semi-transparent black overlay
+        overlay = Image.new('RGBA', original_image.size, (0, 0, 0, 128))  # 128 is the alpha value for transparency
+
+        # Combine the original image with the overlay
+        combined_image = Image.alpha_composite(original_image.convert('RGBA'), overlay)
+
+        # Convert to PhotoImage for Tkinter
+        self.bg_image = ImageTk.PhotoImage(combined_image)
+
+        # Draw the background image onto the canvas
+        self.canvas.create_image(0, 0, image=self.bg_image, anchor='nw')
+
+        # Create a variable for the exchange selection
+        self.exchange_var = tk.StringVar(value='NSE')  # Default value
+
+        # Create text and input field for the stock ticker
+        self.canvas.create_text(30, 50, text="Enter Stock Ticker:", font=("Arial", 16, "bold"), fill='white',
+                                anchor='w')
+        self.stock_entry = tk.Entry(master, font=("Arial", 16, "bold"))
+        self.stock_entry.place(x=240, y=38, width=200)
+
+        # Create text for exchange selection
+        self.canvas.create_text(40, 120, text="Select Exchange:", font=("Arial", 18, "bold"), fill='white', anchor='w')
+
+        # Custom styling for OptionMenu (Remove the white frame)
+        exchange_options = ['NSE', 'BSE']
+        exchange_menu = tk.OptionMenu(master, self.exchange_var, *exchange_options)
+        exchange_menu.place(x=250, y=107)
+        exchange_menu.config(bg='white', fg='black', font=("Arial", 14, "bold"), bd=0, highlightthickness=0,
+                             relief='flat')  # Dark background with white text
+
+        # Create button to fetch stock price with enhanced styling
+        fetch_price_button = tk.Button(master, text="Fetch Price", command=self.fetch_and_display_price,
+                                       font=("Arial", 16, "bold"), bg="#4CAF50", fg="white", relief="flat", bd=0)
+        fetch_price_button.place(x=220, y=170, width=160, height=40)
+
+        # Create button to add stock to wishlist with enhanced styling
+        add_button = tk.Button(master, text="Add to Wishlist", command=self.add_to_wishlist, font=("Arial", 16, "bold"),
+                               bg="#2196F3", fg="white", relief="flat", bd=0)
+        add_button.place(x=220, y=220, width=160, height=40)
+
+        # Create a list to hold the stock entries (wish list)
+        self.wishlist_items = []
+
+        # Label to display fetched price (initially hidden)
+        self.price_display_label = tk.Label(root, text="", font=("Arial", 16, "bold"), bg='black', fg='white')
+        self.price_display_label.pack(anchor='w', padx=60, pady=(20, 10))  # Added padding for better spacing
+        self.price_display_label.pack_forget()  # Hide the label initially
+
+    def fetch_stock_price(self, ticker, exchange):
+        if exchange == 'BSE':
+            try:
+                bse = BSE(download_folder='/path/to/your/download/folder')  # Update this path
+                scrip_code = bse.getScripCode(ticker)  # Get BSE code for the stock name
+                if scrip_code:
+                    url = f"https://www.google.com/finance/quote/{scrip_code}:BOM"
+                else:
+                    return None
+            except Exception as e:
+                return None
+
+        else:  # NSE
+            url = f"https://www.google.com/finance/quote/{ticker}:NSE"
+
+        try:
+            response = requests.get(url)
+            soup = BeautifulSoup(response.text, 'html.parser')
+            class1 = "YMlKec fxKbKc"  # Class name for stock price
+            stock_price = soup.find(class_=class1).get_text()
+            return stock_price.strip()
+        except Exception as e:
+            return None
+
+    def fetch_and_display_price(self):
+        ticker = self.stock_entry.get().strip()
+        exchange = self.exchange_var.get()
+
+        if ticker:
+            price = self.fetch_stock_price(ticker, exchange)
+            if price:
+                self.canvas.create_text(400, 350, text=f"The current price of {ticker} ({exchange}) is: {price}",
+                                        font=("Arial", 16, "bold"), fill='white')
+            else:
+                messagebox.showerror("Error", "Invalid Stock Ticker or unable to fetch price.")
+
+    def add_to_wishlist(self):
+        ticker = self.stock_entry.get().strip()
+        exchange = self.exchange_var.get()
+
+        if ticker:
+            price = self.fetch_stock_price(ticker, exchange)
+            if price:
+                self.add_to_wishlist_canvas(ticker, price, exchange)
+                self.stock_entry.delete(0, tk.END)  # Clear entry after adding
+            else:
+                messagebox.showerror("Error", "Invalid Stock Ticker or unable to fetch price.")
+
+    def add_to_wishlist_canvas(self, ticker, price, exchange):
+        # Draw the stock info as text on the canvas
+        text = f"{ticker} ({exchange}) - Price: {price}"
+        y_position = 400 + len(self.wishlist_items) * 50  # Adjust vertical spacing between items
+
+        # Create the text entry on the canvas
+        self.canvas.create_text(200, y_position, text=text, font=("Arial", 14, "bold"), fill='white', anchor='n')
+
+        # Create a remove button next to the item
+        remove_button = tk.Button(self.master, text="Remove", command=lambda: self.remove_from_wishlist(ticker), font=("Arial", 16, "bold"), bg="red", fg="white", relief="flat", bd=0)
+        remove_button.place(x=400, y=y_position - 5, width=100, height=30)  # Adjust position
+
+        # Save the text and position for possible removal later
+        self.wishlist_items.append((ticker, price, exchange, y_position, remove_button))
+
+    def remove_from_wishlist(self, ticker):
+        # Find and remove the item by ticker
+        for item in self.wishlist_items:
+            if item[0] == ticker:
+                # Remove the corresponding text and button from the canvas
+                self.canvas.delete(self.canvas.find_closest(200, item[3]))  # Delete the text
+                item[4].destroy()  # Destroy the button
+                self.wishlist_items.remove(item)  # Remove from the list
+                break
+
+    def start_tracking(self):
+        for ticker, price, exchange, y_position, _ in self.wishlist_items:
+            # Fetch the latest price and update the corresponding text on the canvas
+            updated_price = self.fetch_stock_price(ticker, exchange)
+            if updated_price:
+                # Update the existing text on the canvas by deleting the old text and drawing new text
+                self.canvas.delete(self.canvas.find_closest(200, y_position))  # Find and delete previous text
+                text = f"{ticker} ({exchange}) - Price: {updated_price}"
+                self.canvas.create_text(200, y_position, text=text, font=("Arial", 14, "bold"), fill='white', anchor='n')
+
+# Create the main window and start the application
+root = tk.Tk()
+app = StockTracker(root)
+
+# Start tracking every 10 seconds (can be adjusted or called separately)
+def update_prices():
+    app.start_tracking()
+    root.after(10000, update_prices)  # Fetch every 10 seconds
+
+update_prices()  # Initial call to start fetching prices
+root.mainloop()
