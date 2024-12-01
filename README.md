@@ -30,7 +30,7 @@ Follow these steps to install and set up the stock price tracker:
 1. **Step 1:** Clone or download the repository to your local machine.
 
     ```bash
-    git clone https://github.com/VARUNs2196/stock-price-tracker.git
+    git clone https://github.com/Dhwani2k3/stock-price-tracker.git
     ```
 
 2. **Step 2:** Navigate to the project directory in the terminal.
