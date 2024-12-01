@@ -115,7 +115,7 @@ If you encounter any issues, here are some common solutions:
 If you need additional help, feel free to contact us:
 
 - **Email:** [support@stocktracker.com](mailto:support@stocktracker.com)
-- **GitHub Repository:** [https://github.com/VARUNs2196/stock-price-tracker](https://github.com/VARUNs2196/stock-price-tracker)
+- **GitHub Repository:** [https://github.com/Dhwani2k3/stock-price-tracker](https://github.com/Dhwani2k3/stock-price-tracker)
 
 We will be happy to assist you with any questions or issues you may have!
 
